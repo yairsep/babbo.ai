@@ -30,13 +30,12 @@ Open <http://127.0.0.1:8787>. The local Worker returns reviewed guidance without
 
 ## Cloudflare deployment
 
-1. Sign in with `npx wrangler login`, select the Cloudflare account that should own Babbo, and create the database in the EU jurisdiction: `npx wrangler d1 create babbo-db --jurisdiction eu`. If Wrangler cannot discover the account automatically, obtain the correct account ID from that account’s Cloudflare dashboard and set `CLOUDFLARE_ACCOUNT_ID` or `account_id` in `wrangler.jsonc`. Do not reuse an ID from an unrelated project without verifying ownership.
-2. Replace the all-zero `database_id` in **both** Wrangler config files with the returned UUID. Never put service secrets in either config file.
-3. Apply the remote schema: `npm run db:remote`.
-4. Deploy: `npm run deploy`. Wrangler publishes the Worker, static assets, AI binding, and hourly Cron Trigger. Set a route or custom domain in Cloudflare if desired.
-5. Optional email reminders: verify a sending domain with Resend, set `REMINDER_FROM_EMAIL` as a Worker variable and `RESEND_API_KEY` with `npx wrangler secret put RESEND_API_KEY`. Without both values, email reminders are not sent. In-app reminders continue to work. For a pilot without email delivery, ask dads to select **In Babbo**.
+1. The Babbo D1 database has been created in the EU jurisdiction and its ID is configured in both Wrangler files. The verified Cloudflare account ID is configured in `wrangler.jsonc`. Sign in with `npx wrangler login` if the deployment credential expires. Never put service secrets in either config file.
+2. Apply the remote schema: `npm run db:remote`.
+3. Deploy: `npm run deploy`. Wrangler publishes the Worker, static assets, AI binding, and hourly Cron Trigger. Set a route or custom domain in Cloudflare if desired.
+4. Optional email reminders: verify a sending domain with Resend, set `REMINDER_FROM_EMAIL` as a Worker variable and `RESEND_API_KEY` with `npx wrangler secret put RESEND_API_KEY`. Without both values, email reminders are not sent. In-app reminders continue to work. For a pilot without email delivery, ask dads to select **In Babbo**.
 
-Cloudflare account access is required to provision D1 and deploy; a GitHub repo alone does not deploy this app. Review Cloudflare's D1 location and data-processing settings for the pilot's privacy requirements before inviting real users.
+The Worker was deployed to `https://babbo.babbo.workers.dev` on 16 September 2026. Cloudflare account access is required for later deployments; a GitHub repo push alone does not deploy this app. Review Cloudflare's D1 location and data-processing settings for the pilot's privacy requirements before inviting real users.
 
 ## Privacy and safety notes
 

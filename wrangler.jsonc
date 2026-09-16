@@ -2,8 +2,28 @@
   "name": "babbo",
   "main": "src/worker.mjs",
   "compatibility_date": "2026-08-01",
-  "assets": { "directory": "./public", "binding": "ASSETS", "not_found_handling": "single-page-application", "run_worker_first": ["/api/*"] },
-  "d1_databases": [{ "binding": "DB", "database_name": "babbo-db", "database_id": "00000000-0000-0000-0000-000000000000" }],
-  "ai": { "binding": "AI" },
-  "triggers": { "crons": ["0 * * * *"] }
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/api/*"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "babbo-db",
+      "database_id": "9ab82f95-687f-4cdb-955b-c1b2238174bb"
+    }
+  ],
+  "ai": {
+    "binding": "AI"
+  },
+  "triggers": {
+    "crons": [
+      "0 * * * *"
+    ]
+  },
+  "account_id": "c03ba416491dfb2921d0121555c539f8"
 }
