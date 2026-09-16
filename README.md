@@ -30,7 +30,7 @@ Open <http://127.0.0.1:8787>. The local Worker returns reviewed guidance without
 
 ## Cloudflare deployment
 
-1. Sign in with `npx wrangler login`, then create the database: `npx wrangler d1 create babbo-db`.
+1. Sign in with `npx wrangler login`, select the Cloudflare account that should own Babbo, and create the database in the EU jurisdiction: `npx wrangler d1 create babbo-db --jurisdiction eu`. If Wrangler cannot discover the account automatically, obtain the correct account ID from that account’s Cloudflare dashboard and set `CLOUDFLARE_ACCOUNT_ID` or `account_id` in `wrangler.jsonc`. Do not reuse an ID from an unrelated project without verifying ownership.
 2. Replace the all-zero `database_id` in **both** Wrangler config files with the returned UUID. Never put service secrets in either config file.
 3. Apply the remote schema: `npm run db:remote`.
 4. Deploy: `npm run deploy`. Wrangler publishes the Worker, static assets, AI binding, and hourly Cron Trigger. Set a route or custom domain in Cloudflare if desired.
