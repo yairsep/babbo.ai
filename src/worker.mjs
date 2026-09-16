@@ -9,7 +9,7 @@ const hex = bytes => [...new Uint8Array(bytes)].map(x => x.toString(16).padStart
 const sha = async value => hex(await crypto.subtle.digest('SHA-256', enc.encode(value)));
 async function passwordHash(password, salt) {
   const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
-  return hex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(salt), iterations: 210000 }, key, 256));
+  return hex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(salt), iterations: 100000 }, key, 256));
 }
 function cookie(token, request, clear = false) {
   const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
