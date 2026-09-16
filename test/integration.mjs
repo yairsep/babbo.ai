@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+const base=process.env.BABBO_TEST_URL || 'http://127.0.0.1:8787';
+async function call(path, method='GET', data, cookie='') {
+  const response=await fetch(base+'/api'+path,{method,headers:{'content-type':'application/json',...(cookie?{cookie}:{})},body:data===undefined?undefined:JSON.stringify(data)});
+  return {status:response.status,data:await response.json(),cookie:response.headers.get('set-cookie')?.split(';')[0]};
+}
+const unique=crypto.randomUUID().slice(0,8);
+const dad1=await call('/auth/register','POST',{email:`dad-${unique}@example.com`,password:'very-secure-pilot-password'});
+assert.equal(dad1.status,201,JSON.stringify(dad1.data));
+const dad2=await call('/auth/register','POST',{email:`other-${unique}@example.com`,password:'very-secure-pilot-password'});
+assert.equal(dad2.status,201);
+const a=dad1.cookie,b=dad2.cookie;
+const profile=await call('/profile','PUT',{children:['twins, 8 months'],family_setup:'co-parenting',challenges:'bedtime and family load',save_sensitive:true,language:'en',reminder_preference:'in_app'},a);
+assert.equal(profile.data.profile.onboarding_done,true);
+assert.equal(profile.data.profile.challenges,'bedtime and family load');
+const chat=await call('/messages','POST',{content:'We keep arguing about the family load'},a);
+assert.equal(chat.status,200,JSON.stringify(chat.data));
+assert.equal(chat.data.proposal.recurrence,'weekly');
+const conversationId=chat.data.conversation_id;
+assert.equal((await call(`/conversations/${conversationId}`,'GET',undefined,b)).status,404);
+const denied=await call('/actions','POST',{title:chat.data.proposal.title,due_at:chat.data.proposal.due_at,recurrence:'weekly'},a);
+assert.equal(denied.status,400);
+const created=await call('/actions','POST',{...chat.data.proposal,confirmed:true},a);
+assert.equal(created.status,201,JSON.stringify(created.data));
+const actionId=created.data.action.id;
+assert.equal((await call('/actions','GET',undefined,a)).data.actions.length,1);
+assert.equal((await call('/actions','GET',undefined,b)).data.actions.length,0);
+assert.equal((await call(`/actions/${actionId}`,'PATCH',{complete:true,confirmed:true},b)).status,404);
+const complete=await call(`/actions/${actionId}`,'PATCH',{complete:true,confirmed:true},a);
+assert.equal(complete.status,200);
+assert.notEqual(complete.data.action.due_at,created.data.action.due_at);
+assert.equal((await call(`/conversations/${conversationId}`,'DELETE',{confirmed:true},a)).status,200);
+assert.equal((await call(`/conversations/${conversationId}`,'GET',undefined,a)).status,404);
+assert.equal((await call('/account','DELETE',{confirmed:true},a)).status,200);
+assert.equal((await call('/me','GET',undefined,a)).status,401);
+assert.equal((await call('/account','DELETE',{confirmed:true},b)).status,200);
+console.log('Integration passed: registration, onboarding, guidance, confirmed recurring action, Today data, isolation, completion, deletion.');

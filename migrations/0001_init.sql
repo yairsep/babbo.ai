@@ -1,0 +1,12 @@
+CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, salt TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TEXT NOT NULL, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+CREATE INDEX sessions_user ON sessions(user_id);
+CREATE TABLE profiles (user_id TEXT PRIMARY KEY, children TEXT NOT NULL DEFAULT '[]', family_setup TEXT NOT NULL DEFAULT '', challenges TEXT NOT NULL DEFAULT '', language TEXT NOT NULL DEFAULT 'en', reminder_preference TEXT NOT NULL DEFAULT 'in_app', onboarding_done INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+CREATE TABLE conversations (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+CREATE INDEX conversations_user ON conversations(user_id, created_at);
+CREATE TABLE messages (id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL, user_id TEXT NOT NULL, role TEXT NOT NULL, content TEXT NOT NULL, source_urls TEXT NOT NULL DEFAULT '[]', created_at TEXT NOT NULL, FOREIGN KEY(conversation_id) REFERENCES conversations(id) ON DELETE CASCADE, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+CREATE INDEX messages_conversation ON messages(conversation_id, created_at);
+CREATE TABLE actions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT NOT NULL, due_at TEXT NOT NULL, recurrence TEXT NOT NULL DEFAULT 'none', status TEXT NOT NULL DEFAULT 'open', reminder INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, completed_at TEXT, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+CREATE INDEX actions_user_due ON actions(user_id, due_at);
+CREATE TABLE memories (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, content TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+CREATE TABLE events (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);

@@ -1,0 +1,17 @@
+{
+  "name": "babbo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --config wrangler.local.jsonc",
+    "deploy": "wrangler deploy",
+    "db:local": "wrangler d1 migrations apply babbo-db --local",
+    "db:remote": "wrangler d1 migrations apply babbo-db --remote",
+    "test": "node --test test/*.test.mjs",
+    "test:integration": "node test/integration.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
