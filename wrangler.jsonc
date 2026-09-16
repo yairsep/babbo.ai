@@ -2,6 +2,9 @@
   "name": "babbo",
   "main": "src/worker.mjs",
   "compatibility_date": "2026-08-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
@@ -10,11 +13,10 @@
       "/api/*"
     ]
   },
-  "d1_databases": [
+  "hyperdrive": [
     {
-      "binding": "DB",
-      "database_name": "babbo-db",
-      "database_id": "9ab82f95-687f-4cdb-955b-c1b2238174bb"
+      "binding": "HYPERDRIVE",
+      "id": "fcdba8e723074729b8bbf56f0d3a3465"
     }
   ],
   "ai": {

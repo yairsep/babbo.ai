@@ -4,7 +4,7 @@ A mobile-first pilot for dads of children aged 0–3 in Amsterdam. A dad can tal
 
 ## What is in the MVP
 
-- Email and password accounts with PBKDF2 password hashes, HttpOnly session cookies, same-origin mutation checks, and user-scoped D1 queries.
+- Email and password accounts with PBKDF2 password hashes, HttpOnly session cookies, same-origin mutation checks, and user-scoped Postgres queries.
 - Four short, skippable onboarding prompts for children’s ages and multiples, family setup, current challenges, language, and reminder preference. The last two personal fields are saved only with an explicit opt-in. The profile remains editable.
 - Private text conversations. Tap-to-speak uses the browser's Web Speech API; its result is placed in the editable message box, and is sent only when the dad taps **Send**. Audio is not uploaded or stored. Browser support varies; typing always works. Replies can be read aloud with browser speech synthesis.
 - A small, reviewed set of guidance for overwhelm, family load, supporting a partner, baby crying, toddler behavior, and loneliness. Ambiguous prompts ask a clarifying question. Urgent and clinical prompts route to qualified help. Toddler and baby guidance links to American Academy of Pediatrics sources.
@@ -14,15 +14,18 @@ A mobile-first pilot for dads of children aged 0–3 in Amsterdam. A dad can tal
 
 ## Stack and choices
 
-A static HTML/CSS/JavaScript frontend is served by a Cloudflare Worker assets binding. The same Worker handles the API, Workers AI, a scheduled reminder job, and a D1 SQLite database. This keeps the pilot deployable as one Worker and avoids a client framework/build dependency. `wrangler.jsonc` is the production configuration; `wrangler.local.jsonc` omits the AI binding so local development works without Cloudflare credentials. The interface is currently English; `language` is stored as `en` or `nl`, speech locale follows it, and guidance generation can answer in Dutch. Full Dutch copy needs review before a Dutch-language pilot.
+A static HTML/CSS/JavaScript frontend is served by a Cloudflare Worker assets binding. The same Worker handles the API, Workers AI, and a scheduled reminder job. Data lives in **Postgres on Supabase**, reached through **Cloudflare Hyperdrive** (a connection pooler/accelerator, not a database itself) using the `postgres` (postgres.js) driver. This keeps the pilot deployable as one Worker, avoids a client framework/build dependency, and — unlike Cloudflare D1 (the original choice, since replaced) — gives a real Postgres endpoint that any standard SQL client (DataGrip, psql, TablePlus, …) can connect to directly for local inspection. `wrangler.jsonc` is the production configuration; `wrangler.local.jsonc` omits the AI binding so local development works without a Workers AI entitlement. The interface is currently English; `language` is stored as `en` or `nl`, speech locale follows it, and guidance generation can answer in Dutch. Full Dutch copy needs review before a Dutch-language pilot.
+
+Both `wrangler.jsonc` and `wrangler.local.jsonc` reference the same Hyperdrive config (`babbo-pg`), which stores the Supabase connection string encrypted on Cloudflare's side — it is never written into a committed file. Local development instead points `wrangler dev` straight at Supabase (bypassing Hyperdrive's edge pooling) via a `localConnectionString`-equivalent environment variable, loaded from the git-ignored `.dev.vars`.
 
 ## Local setup
 
-Requirements: Node.js 20+ and npm.
+Requirements: Node.js 20+ and npm, and a Supabase (or any Postgres) database.
 
 ```bash
 npm install
-npm run db:local
+cp .dev.vars.example .dev.vars   # fill in your own Postgres connection string
+DATABASE_URL='<your connection string>' npm run db:migrate
 npm run dev
 ```
 
@@ -30,12 +33,26 @@ Open <http://127.0.0.1:8787>. The local Worker returns reviewed guidance without
 
 ## Cloudflare deployment
 
-1. The Babbo D1 database has been created in the EU jurisdiction and its ID is configured in both Wrangler files. The verified Cloudflare account ID is configured in `wrangler.jsonc`. Sign in with `npx wrangler login` if the deployment credential expires. Never put service secrets in either config file.
-2. Apply the remote schema: `npm run db:remote`.
-3. Deploy: `npm run deploy`. Wrangler publishes the Worker, static assets, AI binding, and hourly Cron Trigger. Set a route or custom domain in Cloudflare if desired.
-4. Optional email reminders: verify a sending domain with Resend, set `REMINDER_FROM_EMAIL` as a Worker variable and `RESEND_API_KEY` with `npx wrangler secret put RESEND_API_KEY`. Without both values, email reminders are not sent. In-app reminders continue to work. For a pilot without email delivery, ask dads to select **In Babbo**.
+1. Create a Postgres database (this pilot uses [Supabase](https://supabase.com)). Grab its connection string from **Project Settings → Database → Connection string**.
+2. Apply the schema: `DATABASE_URL='<connection string>' npm run db:migrate`.
+3. Create the Hyperdrive config (one-time; Wrangler verifies connectivity before succeeding): `npx wrangler hyperdrive create babbo-pg --connection-string="<connection string>" --caching-disabled`. Copy the resulting `id` into the `hyperdrive` block of both Wrangler files if it differs from what's already committed. Caching is disabled because several flows read immediately after writing (e.g. register → read profile); Hyperdrive does not invalidate cached reads on write.
+4. The verified Cloudflare account ID is configured in `wrangler.jsonc`. Sign in with `npx wrangler login` if the deployment credential expires. Never put service secrets in either config file.
+5. Deploy: `npm run deploy`. Wrangler publishes the Worker, static assets, AI binding, Hyperdrive binding, and hourly Cron Trigger. Set a route or custom domain in Cloudflare if desired.
+6. Optional email reminders: verify a sending domain with Resend, set `REMINDER_FROM_EMAIL` as a Worker variable and `RESEND_API_KEY` with `npx wrangler secret put RESEND_API_KEY`. Without both values, email reminders are not sent. In-app reminders continue to work. For a pilot without email delivery, ask dads to select **In Babbo**.
 
-The Worker was deployed to `https://babbo.babbo.workers.dev` on 16 September 2026. Cloudflare account access is required for later deployments; a GitHub repo push alone does not deploy this app. Review Cloudflare's D1 location and data-processing settings for the pilot's privacy requirements before inviting real users.
+The Worker is deployed to `https://babbo.babbo.workers.dev`. Cloudflare account access is required for later deployments; a GitHub repo push alone does not deploy this app. **Confirm the Supabase project's region before inviting real Amsterdam users** — the original D1 database was explicitly provisioned in the EU for GDPR reasons, and that choice needs to be re-made for whichever Supabase region the project was created in (Project Settings → General → Region).
+
+## Connecting a SQL client (DataGrip, psql, etc.)
+
+Because the database is real Postgres, any standard client connects with the same connection string used above:
+
+- **Host/port**: from the Supabase connection string (`db.<project-ref>.supabase.co`, port `5432` for a direct connection, or Supabase's **Session pooler** host/port if your network blocks direct Postgres).
+- **Database**: `postgres`
+- **User**: `postgres` (or `postgres.<project-ref>` if using the pooler)
+- **Password**: your Supabase database password
+- **SSL**: required
+
+In DataGrip: **New Data Source → PostgreSQL**, fill in the fields above, test the connection, and download the driver if prompted.
 
 ## Privacy and safety notes
 
