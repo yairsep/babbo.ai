@@ -218,11 +218,45 @@ export async function handleApi(request, env) {
       await event(sql, user.id, `feedback_${data.value}`);
       return json({ ok: true });
     }
+    if (path === '/api/community/profile' && method === 'GET') {
+      const row = (await sql`SELECT * FROM community_profiles WHERE user_id=${user.id}`)[0];
+      return json({ community_profile: row || null });
+    }
+    if (path === '/api/community/profile' && method === 'PUT') {
+      const data = await body(request);
+      if (data.confirmed !== true) return fail('Confirm sharing your profile first');
+      const display_name = String(data.display_name || '').trim().slice(0, 40);
+      const area = String(data.area || '').trim().slice(0, 60);
+      const intro = String(data.intro || '').trim().slice(0, 280);
+      const visible = data.visible === true;
+      if (!display_name) return fail('Add a first name to share');
+      const existing = (await sql`SELECT user_id FROM community_profiles WHERE user_id=${user.id}`)[0];
+      if (existing) {
+        await sql`UPDATE community_profiles SET display_name=${display_name},area=${area},intro=${intro},visible=${visible},updated_at=${now()} WHERE user_id=${user.id}`;
+      } else {
+        await sql`INSERT INTO community_profiles (user_id,display_name,area,intro,visible,created_at,updated_at) VALUES (${user.id},${display_name},${area},${intro},${visible},${now()},${now()})`;
+        await event(sql, user.id, 'community_opted_in');
+      }
+      return json({ community_profile: (await sql`SELECT * FROM community_profiles WHERE user_id=${user.id}`)[0] });
+    }
+    if (path === '/api/community/profile' && method === 'DELETE') {
+      const data = await body(request);
+      if (data.confirmed !== true) return fail('Confirm removal first');
+      await sql`DELETE FROM community_profiles WHERE user_id=${user.id}`;
+      return json({ ok: true });
+    }
+    if (path === '/api/community' && method === 'GET') {
+      const own = (await sql`SELECT visible FROM community_profiles WHERE user_id=${user.id}`)[0];
+      if (!own?.visible) return fail('Share your own profile to browse other dads', 403);
+      const rows = await sql`SELECT community_profiles.user_id,display_name,area,intro,profiles.children FROM community_profiles JOIN profiles ON profiles.user_id=community_profiles.user_id WHERE community_profiles.visible=true AND community_profiles.user_id<>${user.id} ORDER BY community_profiles.updated_at DESC LIMIT 200`;
+      return json({ dads: rows.map(r => ({ ...r, children: JSON.parse(r.children || '[]') })) });
+    }
     if (path === '/api/account' && method === 'DELETE') {
       const data = await body(request);
       if (data.confirmed !== true) return fail('Confirm account deletion first');
       await sql.begin(async sql => {
         await sql`DELETE FROM events WHERE user_id=${user.id}`;
+        await sql`DELETE FROM community_profiles WHERE user_id=${user.id}`;
         await sql`DELETE FROM memories WHERE user_id=${user.id}`;
         await sql`DELETE FROM messages WHERE user_id=${user.id}`;
         await sql`DELETE FROM conversations WHERE user_id=${user.id}`;

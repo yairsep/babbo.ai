@@ -11,6 +11,7 @@ A mobile-first pilot for dads of children aged 0–3 in Amsterdam. A dad can tal
 - Cloudflare Workers AI can rephrase non-clinical, non-developmental guidance using the dad's saved profile and explicit memories. Developmental, urgent, and clinical replies always use the reviewed text. If AI is unavailable, Babbo returns the reviewed guidance directly. Task suggestions come from the reviewed guidance, never directly from model output.
 - Confirmed one-time, daily, and weekly commitments; a Today view; in-app reminders; optional email reminders via Resend and a Cloudflare Cron Trigger. Changes, completion, and deletion each require confirmation.
 - Conversation, memory, task, and full-account deletion. Product event names and timestamps are saved without message content.
+- An opt-in **Community** directory so Amsterdam dads can find each other once there are enough of them. A dad shares only a first name, kid ages (reused from his existing profile), an optional area, and an optional one-line intro — never his email. Browsing other dads' profiles requires having opted in yourself first (reciprocity: no one-way lurking). There is no in-app messaging yet; dads coordinate meeting up outside the app.
 
 ## Stack and choices
 
@@ -56,7 +57,9 @@ In DataGrip: **New Data Source → PostgreSQL**, fill in the fields above, test 
 
 ## Privacy and safety notes
 
-Every database read and mutation for private content is scoped to the authenticated user. Conversations, messages, profile data, actions, memories, sessions, and event rows are deleted with account deletion. Backups held by infrastructure providers may have separate retention periods. This MVP does not include password reset, email verification, abuse-rate limiting, partner accounts, or community features; add those and conduct a security/privacy review before a broader public launch. The service is a supportive parenting guide, not medical care or therapy. If anyone is in immediate danger in the Netherlands, call 112; 113 Zelfmoordpreventie supports suicidal crises at 113 or 0800-0113.
+Every database read and mutation for private content is scoped to the authenticated user. Conversations, messages, profile data, actions, memories, sessions, community profiles, and event rows are deleted with account deletion. Backups held by infrastructure providers may have separate retention periods. This MVP does not include password reset, email verification, abuse-rate limiting, or partner accounts; add those and conduct a security/privacy review before a broader public launch. The service is a supportive parenting guide, not medical care or therapy. If anyone is in immediate danger in the Netherlands, call 112; 113 Zelfmoordpreventie supports suicidal crises at 113 or 0800-0113.
+
+**Community feature gap**: the directory is opt-in and shows only what a dad deliberately fills in (first name, kid ages, area, intro) — but there is no moderation, blocking, or reporting on that free-text yet. Treat it as a pilot-scale feature for a small, known group of dads; add moderation tooling before opening it to a wider or unvetted audience.
 
 Grounding sources: [AAP tantrum guidance](https://www.healthychildren.org/English/family-life/family-dynamics/communication-discipline/Pages/Temper-Tantrums.aspx), [AAP crying baby guidance](https://www.healthychildren.org/English/ages-stages/baby/crying-colic/pages/Calming-A-Fussy-Baby.aspx), [Dutch emergency number](https://www.government.nl/themes/justice-security-and-defence/emergency-number-112), [113 Zelfmoordpreventie](https://www.113.nl/english).
 
