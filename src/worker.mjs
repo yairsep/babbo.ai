@@ -43,7 +43,7 @@ async function profile(db, userId) {
   return { ...row, children: JSON.parse(row.children || '[]'), onboarding_done: !!row.onboarding_done };
 }
 async function aiResponse(env, guide, message, profileData, memories) {
-  if (!env.AI || ['urgent', 'clinical', 'ambiguous'].includes(guide.kind)) return guide.response;
+  if (!env.AI || ['urgent', 'clinical', 'ambiguous', 'toddler', 'baby'].includes(guide.kind)) return guide.response;
   try {
     const result = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
       messages: [
